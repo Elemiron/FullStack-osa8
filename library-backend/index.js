@@ -98,14 +98,110 @@ let books = [
 */
 
 const typeDefs = `
+
+  #Tehty tehtävää 3. authorCount queryä varten
+  type Author {
+    name: String!
+    born: Int
+    bookCount: Int!
+  }
+
+  #Tehty tehtävää 2. all books queryä varten
+  type Book {
+    title: String!
+    author: String!
+    published: Int!
+    genres: [String!]!
+  }
+
   type Query {
-    dummy: Int
+    bookCount: Int!
+    authorCount: Int!
+    allBooks(author: String, genre: String): [Book!]!
+    allAuthors: [Author!]!
+  }
+
+  #Tehtävä 4. addBook mutationia varten
+  type Mutation {
+    addBook(
+      title: String!
+      author: String!
+      published: Int!
+      genres: [String!]!
+    ): Book!
+
+    #tehtävää 7 varten lisätty editAuthor mutation
+    editAuthor(
+      name: String!
+      setBornTo: Int!
+    ): Author
   }
 `
 
 const resolvers = {
   Query: {
-    dummy: () => 0,
+    bookCount: () => books.length,
+    authorCount: () => authors.length,
+
+    allBooks: (root, args) => {
+      let filteredBooks = books
+
+      if (args.author) {
+        filteredBooks = filteredBooks.filter(
+          book => book.author === args.author
+        )
+      }
+
+      if (args.genre) {
+        filteredBooks = filteredBooks.filter(
+          book => book.genres.includes(args.genre)
+        )
+      }
+
+      return filteredBooks
+    },
+
+    allAuthors: () =>
+      authors.map(author => ({
+        ...author,
+        bookCount: books.filter(book => book.author === author.name).length,
+      })),
+  },
+
+  //tehtävää 6 varten
+  Mutation: {
+    addBook: (root, args) => {
+      const authorExists = authors.find(
+        author => author.name === args.author
+      )
+      
+    if (!authorExists) {
+      authors.push({
+      name: args.author,
+      id: String(authors.length + 1),
+      })
+    }
+    
+      const newBook = {
+        ...args,
+        id: String(books.length + 1),
+      }
+    
+      books.push(newBook)
+    
+      return newBook
+    },
+
+    //tehtävää 7 varten  
+    editAuthor: (root, args) => {
+      const author = authors.find(
+        author => author.name === args.name
+      )
+      
+      if (!author) {
+        return null
+      }
+    },
   },
 }
 
