@@ -201,6 +201,9 @@ const resolvers = {
       if (!author) {
         return null
       }
+      
+      author.born = args.setBornTo
+      return author
     },
   },
 }
