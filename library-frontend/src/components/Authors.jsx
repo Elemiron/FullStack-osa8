@@ -101,7 +101,7 @@ const Authors = (props) => {
           <button type="submit">update author</button>
        </form>
          </div>
-        )
+      )
   }
 
 export default Authors
