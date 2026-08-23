@@ -1,6 +1,6 @@
 name: Test library-backend
 
-on:
+'on':
   push:
     branches: [ main, master ]
   workflow_dispatch:
