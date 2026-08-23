@@ -1,3 +1,5 @@
+const jwt = require('jsonwebtoken')
+const User = require('./models/User')
 const { GraphQLError } = require('graphql')
 const Author = require('./models/Author')
 const Book = require('./models/Book')
@@ -29,10 +31,41 @@ const resolvers = {
     allAuthors: async () => {
       return Author.find({})
     },
+
+    me: async (root, args, context) => {
+      const auth = context.req.headers.authorization
+
+      if (!auth) {
+        return null
+      }
+
+      const decodedToken = jwt.verify(
+        auth.substring(7),
+        process.env.JWT_SECRET
+      )
+
+      return User.findById(decodedToken.id)
+    },
   },
 
   Mutation: {
-    addBook: async (root, args) => {
+    addBook: async (root, args, context) => {
+      const auth = context.req.headers.authorization
+
+      if (!auth) {
+        throw new GraphQLError('not authenticated', {
+          extensions: {
+            code: 'UNAUTHENTICATED',
+          },
+        })
+      }
+
+      const decodedToken = jwt.verify(
+        auth.substring(7),
+        process.env.JWT_SECRET
+      )
+
+      // token on validi → jatketaan normaalisti
       try {
         let author = await Author.findOne({ name: args.author })
 
@@ -61,7 +94,22 @@ const resolvers = {
       }
     },
 
-    editAuthor: async (root, args) => {
+    editAuthor: async (root, args, context) => {
+      const auth = context.req.headers.authorization
+
+      if (!auth) {
+        throw new GraphQLError('not authenticated', {
+          extensions: {
+            code: 'UNAUTHENTICATED',
+          },
+        })
+      }
+
+      jwt.verify(
+        auth.substring(7),
+        process.env.JWT_SECRET
+      )
+
       const author = await Author.findOne({ name: args.name })
 
       if (!author) {
@@ -73,6 +121,35 @@ const resolvers = {
 
       return author
     },
+
+    createUser: async (root, args) => {
+      const user = new User({
+        username: args.username,
+        favoriteGenre: args.favoriteGenre,
+        password: 'secret',
+      })
+
+      return user.save()
+    },
+
+    login: async (root, args) => {
+      const user = await User.findOne({ username: args.username })
+
+      if (!user || user.password !== args.password) {
+        throw new GraphQLError('Invalid username or password', {
+          extensions: {
+            code: 'BAD_USER_INPUT',
+          },
+        })
+      }
+
+      const userForToken = {
+        username: user.username,
+        id: user._id,
+      }
+
+      return { value: jwt.sign(userForToken, process.env.JWT_SECRET) }
+    }
   },
 }
 

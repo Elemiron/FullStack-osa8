@@ -16,11 +16,22 @@ const typeDefs = `
     id: ID!
   }
 
+  type User {
+    username: String!
+    favoriteGenre: String!
+    id: ID!
+  }
+
+  type Token {
+    value: String!
+  }
+
   type Query {
     bookCount: Int!
     authorCount: Int!
     allBooks(author: String, genre: String): [Book!]!
     allAuthors: [Author!]!
+    me: User
   }
 
   #Tehtävä 4. addBook mutationia varten
@@ -37,6 +48,17 @@ const typeDefs = `
       name: String!
       setBornTo: Int!
     ): Author
+
+    #Tehtävää 16 varten
+    createUser (
+      username: String!
+      favoriteGenre: String!
+    ): User
+
+    login(
+      username: String!
+      password: String!
+    ): Token
   }
 `
 
