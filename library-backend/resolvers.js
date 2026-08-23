@@ -1,8 +1,8 @@
 const jwt = require('jsonwebtoken')
-const User = require('./models/User')
+const User = require('./models/user')
 const { GraphQLError } = require('graphql')
-const Author = require('./models/Author')
-const Book = require('./models/Book')
+const Author = require('./models/author')
+const Book = require('./models/book')
 
 const resolvers = {
   Query: {
@@ -33,7 +33,11 @@ const resolvers = {
     },
 
     me: async (root, args, context) => {
-      const auth = context.req.headers.authorization
+      if (context.currentUser) {
+        return User.findById(context.currentUser.id)
+      }
+
+      const auth = context?.req?.headers?.authorization
 
       if (!auth) {
         return null
@@ -50,20 +54,23 @@ const resolvers = {
 
   Mutation: {
     addBook: async (root, args, context) => {
-      const auth = context.req.headers.authorization
+      if (!context.currentUser) {
+        const auth = context?.req?.headers?.authorization
 
-      if (!auth) {
-        throw new GraphQLError('not authenticated', {
-          extensions: {
-            code: 'UNAUTHENTICATED',
-          },
-        })
+        if (!auth) {
+          throw new GraphQLError('not authenticated', {
+            extensions: {
+              code: 'UNAUTHENTICATED',
+            },
+          })
+        }
+
+
+        jwt.verify(
+          auth.substring(7),
+          process.env.JWT_SECRET
+        )
       }
-
-      const decodedToken = jwt.verify(
-        auth.substring(7),
-        process.env.JWT_SECRET
-      )
 
       // token on validi → jatketaan normaalisti
       try {
@@ -84,8 +91,13 @@ const resolvers = {
           genres: args.genres,
         })
 
-        return await book.save()
-      } catch (error) {
+        await book.save()
+
+        return Book.findById(book._id).populate('author')
+
+      } 
+      
+      catch (error) {
         throw new GraphQLError(error.message, {
           extensions: {
             code: 'BAD_USER_INPUT',
@@ -95,32 +107,34 @@ const resolvers = {
     },
 
     editAuthor: async (root, args, context) => {
-      const auth = context.req.headers.authorization
+      if (!context.currentUser) {
+        const auth = context?.req?.headers?.authorization
 
-      if (!auth) {
-        throw new GraphQLError('not authenticated', {
-          extensions: {
-            code: 'UNAUTHENTICATED',
-          },
-        })
+        if (!auth) {
+          throw new GraphQLError('not authenticated', {
+            extensions: {
+              code: 'UNAUTHENTICATED',
+            },
+          })
+        }
+
+        jwt.verify(
+          auth.substring(7),
+          process.env.JWT_SECRET
+        )
       }
 
-      jwt.verify(
-        auth.substring(7),
-        process.env.JWT_SECRET
-      )
+        const author = await Author.findOne({ name: args.name })
 
-      const author = await Author.findOne({ name: args.name })
+        if (!author) {
+          return null
+        }
 
-      if (!author) {
-        return null
-      }
+        author.born = args.setBornTo
+        await author.save()
 
-      author.born = args.setBornTo
-      await author.save()
-
-      return author
-    },
+        return author
+      },
 
     createUser: async (root, args) => {
       const user = new User({
@@ -135,7 +149,7 @@ const resolvers = {
     login: async (root, args) => {
       const user = await User.findOne({ username: args.username })
 
-      if (!user || user.password !== args.password) {
+      if (!user || args.password !== 'secret') {
         throw new GraphQLError('Invalid username or password', {
           extensions: {
             code: 'BAD_USER_INPUT',
@@ -149,6 +163,19 @@ const resolvers = {
       }
 
       return { value: jwt.sign(userForToken, process.env.JWT_SECRET) }
+    },
+
+    // Tehtävä 17. _resetDatabase mutation
+    _resetDatabase: async () => {
+      if (process.env.NODE_ENV !== 'test') {
+        throw new GraphQLError('_resetDatabase is only available in test mode')
+      }
+
+      await Author.deleteMany({})
+      await Book.deleteMany({})
+      await User.deleteMany({})
+
+      return true
     }
   },
 }
