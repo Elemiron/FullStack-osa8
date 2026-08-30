@@ -84,8 +84,10 @@ const Authors = (props) => {
 
           <form onSubmit={submit}>
             <div>
-              name
+              <label htmlFor="name">name</label>
               <select
+                name="name"
+                id="name"
                 value={name}
                 onChange={({ target }) => setName(target.value)}
               >
@@ -100,9 +102,10 @@ const Authors = (props) => {
             </div>
 
             <div>
-              born
+              <label htmlFor="born">born</label>
               <input
                 type="number"
+                id="born"
                 value={born}
                 onChange={({ target }) => setBorn(target.value)}
               />

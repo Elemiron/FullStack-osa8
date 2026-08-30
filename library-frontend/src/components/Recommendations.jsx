@@ -11,7 +11,7 @@ const ME = gql`
 
 const ALL_BOOKS = gql`
   query {
-    allBooks {
+    allBooks{
       title
       author {
         name
@@ -23,10 +23,15 @@ const ALL_BOOKS = gql`
 `
 
 const Recommendations = (props) => {
-  const meResult = useQuery(ME)
-  const booksResult = useQuery(ALL_BOOKS)
-  
-  if (!props.show) {
+  const meResult = useQuery(ME, {
+    skip: !props.show,
+    })
+    
+    const booksResult = useQuery(ALL_BOOKS, {
+        skip: !props.show,
+    })
+    
+    if (!props.show) {
     return null
     }
     
