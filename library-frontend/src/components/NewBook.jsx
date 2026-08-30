@@ -1,6 +1,27 @@
 import { useState } from 'react'
 import { useMutation, gql } from '@apollo/client'
 
+// Tehty 8.19: tarvitaan, jotta kirjan lisäämisen jälkeen saadaan päivitettyä myös kirjailijoiden lista
+const ALL_AUTHORS = gql` 
+  query {
+    allAuthors {
+      name
+      born
+      bookCount
+    }
+  }
+`
+const ALL_BOOKS = gql`
+  query {
+    allBooks {
+      title
+      author {
+        name
+      }
+      published
+    }
+  }
+`
 const ADD_BOOK = gql`
   mutation addBook(
     $title: String!
@@ -15,7 +36,9 @@ const ADD_BOOK = gql`
       genres: $genres
     ) {
       title
-      author
+      author {
+        name
+      }
     }
   }
 `
@@ -26,7 +49,10 @@ const NewBook = (props) => {
   const [published, setPublished] = useState('')
   const [genre, setGenre] = useState('')
   const [genres, setGenres] = useState([])
-  const [addBook] = useMutation(ADD_BOOK)
+  // Tehty 8.19: päivitetään kirjojen lista heti uuden kirjan lisäämisen jälkeen
+  const [addBook] = useMutation(ADD_BOOK, {
+    refetchQueries: [{ query: ALL_BOOKS }, { query: ALL_AUTHORS }],
+  })
 
   if (!props.show) {
     return null
