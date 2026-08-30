@@ -3,8 +3,8 @@ import { useState } from 'react'
 
 
 const ALL_BOOKS = gql`
-  query {
-    allBooks {
+  query allBooks($genre: String) {
+    allBooks(genre: $genre) {
       title
       author {
         name
@@ -14,29 +14,42 @@ const ALL_BOOKS = gql`
     }
   }
 `
+// Tehty 8.22: haetaan kaikki kirjat erikseen, jotta kaikki genrenapit pysyvät näkyvissä
+const ALL_BOOKS_FOR_GENRES = gql`
+  query {
+    allBooks {
+      genres
+    }
+  }
+`
 
 const Books = (props) => {
-  const result = useQuery(ALL_BOOKS)
   const [genre, setGenre] = useState(null)
+  const result = useQuery(ALL_BOOKS, {
+    variables : {
+      genre,
+    },
+  })
+
+  const allBooksResult = useQuery(ALL_BOOKS_FOR_GENRES)
 
   if (!props.show) {
     return null
   }
 
-  if (result.loading) {
+  if (result.loading || allBooksResult.loading) {
     return <div>loading...</div>
   }
 
   const books = result.data.allBooks
+  const allBooks = allBooksResult.data.allBooks
 
-  // Näytetään kaikki kirjat, jos genreä ei ole valittu.
-  // Muuten näytetään vain valittuun genreen kuuluvat kirjat.
-  const booksToShow = genre
-    ? books.filter((book) => book.genres.includes(genre))
-    : books
+  // Tehty 8.22: kirjat suodatetaan nyt GraphQL-kyselyllä Reactin sijaan.
+  // Valittu genre lähetetään allBooks-querylle muuttujana.
+
 
   // Kerätään kaikista kirjoista kaikki eri genret.
-  const genres = [...new Set(books.flatMap((book) => book.genres))]
+  const genres = [...new Set(allBooks.flatMap((book) => book.genres))]
 
   return (
     <div>
@@ -50,7 +63,7 @@ const Books = (props) => {
             <th>published</th>
           </tr>
 
-          {booksToShow.map((a) => (
+          {books.map((a) => (
             <tr key={a.title}>
               <td>{a.title}</td>
               <td>{a.author.name}</td>
