@@ -1,4 +1,6 @@
 import { useQuery, gql } from '@apollo/client'
+import { useState } from 'react'
+
 
 const ALL_BOOKS = gql`
   query {
@@ -8,12 +10,14 @@ const ALL_BOOKS = gql`
         name
       }
       published
+      genres
     }
   }
 `
 
 const Books = (props) => {
   const result = useQuery(ALL_BOOKS)
+  const [genre, setGenre] = useState(null)
 
   if (!props.show) {
     return null
@@ -24,6 +28,15 @@ const Books = (props) => {
   }
 
   const books = result.data.allBooks
+
+  // Näytetään kaikki kirjat, jos genreä ei ole valittu.
+  // Muuten näytetään vain valittuun genreen kuuluvat kirjat.
+  const booksToShow = genre
+    ? books.filter((book) => book.genres.includes(genre))
+    : books
+
+  // Kerätään kaikista kirjoista kaikki eri genret.
+  const genres = [...new Set(books.flatMap((book) => book.genres))]
 
   return (
     <div>
@@ -36,7 +49,8 @@ const Books = (props) => {
             <th>author</th>
             <th>published</th>
           </tr>
-          {books.map((a) => (
+
+          {booksToShow.map((a) => (
             <tr key={a.title}>
               <td>{a.title}</td>
               <td>{a.author.name}</td>
@@ -45,6 +59,16 @@ const Books = (props) => {
           ))}
         </tbody>
       </table>
+
+       {genres.map((g) => (
+        <button key={g} onClick={() => setGenre(g)}>
+          {g}
+        </button>
+      ))}
+
+      <button onClick={() => setGenre(null)}>
+        all genres
+      </button>
     </div>
   )
 }
