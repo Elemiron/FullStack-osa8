@@ -22,7 +22,7 @@ const ALL_BOOKS_FOR_GENRES = gql`
     }
   }
 `
-
+// Tehty 8.23: haetaan tuore lista serveriltä aina genreä vaihdettaessa
 const Books = (props) => {
   const [genre, setGenre] = useState(null)
   const result = useQuery(ALL_BOOKS, {
@@ -30,6 +30,11 @@ const Books = (props) => {
       genre,
     },
   })
+
+  const selectGenre = (genre) => {
+    setGenre(genre)
+    result.refetch({ genre })
+  }
 
   const allBooksResult = useQuery(ALL_BOOKS_FOR_GENRES)
 
@@ -74,12 +79,12 @@ const Books = (props) => {
       </table>
 
        {genres.map((g) => (
-        <button key={g} onClick={() => setGenre(g)}>
+        <button key={g} onClick={() => selectGenre(g)}>
           {g}
         </button>
       ))}
 
-      <button onClick={() => setGenre(null)}>
+      <button onClick={() => selectGenre(null)}>
         all genres
       </button>
     </div>
